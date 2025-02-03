@@ -1,0 +1,194 @@
+import pandas as pd
+import sqlite3 as sq
+import matplotlib.pyplot as plt
+import numpy as np
+from sklearn.linear_model import LinearRegression
+    
+tab1 = pd.read_csv("tab1.csv")
+tab2 = pd.read_csv("tab2.csv")
+tab3 = pd.read_csv("tab3.csv")
+tab4 = pd.read_csv("tab4.csv")
+tab5 = pd.read_csv("tab5.csv")
+conn = sq.connect("EDGAR.FOOD.db")
+conn.close()
+
+
+tab1.describe()
+tab2.describe()
+tab3.describe()
+tab4.describe()
+tab5.describe()
+
+tab2.head(20)
+
+region= ['Canada', 'USA', 'Mexico', 'Rest South America', 'Rest Central America', 'Brazil']
+tab2['Regional grouping']= tab2['Regional grouping'].replace(region, 'America')
+
+america=tab2.groupby('Regional grouping').get_group('America')
+america
+
+join= america.join(tab5.set_index('Name'), on='Country name')
+join
+
+substance = join.groupby('Substance').get_group('PM2.5')
+
+substance
+
+substanceP= join.groupby('Substance').get_group('PM10')
+substanceP
+
+columns = ['Substance'] + [str(anno) for anno in range(2000, 2019)]
+substance_filtered = substance[columns]
+substance_filtered
+
+columns2 = ['Substance'] + [str(anno) for anno in range(2000, 2019)]
+substance_filtered2 = substanceP[columns]
+substance_filtered2
+
+media = substance_filtered.describe().loc['mean']
+
+plt.figure(figsize=(10, 6))
+plt.plot(media.index, media.values, label="media", marker='o', color='b')
+
+
+
+plt.title('Concentrazione media del PM2.5 in America negli anni (2000-2018)', fontsize=14)
+plt.xlabel('Anno', fontsize=12)
+plt.ylabel('Concentrazione media', fontsize=12)
+
+
+plt.legend()
+
+plt.xticks(rotation=45) 
+plt.grid(True)
+plt.tight_layout() 
+plt.show()
+
+media2 = substance_filtered2.describe().loc['mean']
+
+plt.figure(figsize=(10, 6))
+plt.plot(media2.index, media2.values, label="mediaPM10", marker='o', color='black')
+
+
+
+plt.title('Concentrazione media del PM10 in America negli anni (2000-2018)', fontsize=14)
+plt.xlabel('Anno', fontsize=12)
+plt.ylabel('Concentrazione media', fontsize=12)
+
+
+plt.legend()
+
+plt.xticks(rotation=45) 
+plt.grid(True)
+plt.tight_layout() 
+plt.show()
+
+
+
+
+nazione = america.groupby('Country name')
+colonneJoin = ['Country name', 'Substance'] + [str(year) for year in range(2000, 2019)]
+join2 = pd.merge(america, substance[colonneJoin], on='Country name', how='left')
+lista =  join2[~join2[colonneJoin].isin([1.0]).any(axis=1)]
+indices_to_drop = join2[join2['2000'] == 1].index
+
+join2 = join2.drop(indices_to_drop)
+join2
+
+nazione = america.groupby('Country name')
+colonneJoin = ['Country name', 'Substance'] + [str(year) for year in range(2000, 2019)]
+join3 = pd.merge(america, substanceP[colonneJoin], on='Country name', how='left')
+lista =  join3[~join3[colonneJoin].isin([1.0]).any(axis=1)]
+
+
+join3 = join3.drop(indices_to_drop)
+join3    
+
+
+columns_to_consider = ['Country name', 'Substance'] + [str(year) for year in range(2000, 2019)]
+substance = join2[columns_to_consider]
+el = join2.sort_values(by=['Country name']+ [str(year) for year in range(2000, 2019)])
+
+max_pollution_by_country = el[columns_to_consider[2:]].max(axis=1)
+
+el['Max Pollution'] = max_pollution_by_country
+el = el[el['Max Pollution'] > 0.5]
+
+plt.figure(figsize=(10, 6))
+plt.bar(el['Country name'], el['Max Pollution'], color='skyblue')
+
+
+plt.xlabel('Nazione')
+plt.ylabel('Valori oltre 0.5')
+plt.title('Valori oltre 0.5 di PM2.5 per Nazione (2000-2018)')
+plt.xticks(rotation=90)  # Ruota i nomi delle nazioni per evitare sovrapposizioni
+plt.tight_layout()  # Adatta automaticamente la disposizione per evitare sovrapposizioni
+
+
+plt.show()
+
+#Grafico per massimo inquinamento PM10
+columns_to_consider = ['Country name', 'Substance'] + [str(year) for year in range(2000, 2019)]
+substancePM = join3[columns_to_consider]
+el = substancePM.sort_values(by=['Country name']+ [str(year) for year in range(2000, 2019)])
+
+max_pollution_by_country = el[columns_to_consider[2:]].max(axis=1)
+
+el['Max Pollution'] = max_pollution_by_country
+
+plt.figure(figsize=(10, 6))
+plt.bar(el['Country name'], el['Max Pollution'], color='red')
+
+plt.xlabel('Nazione')
+plt.ylabel('Valore massimo')
+plt.title('Massimo inquinamento PM10 per Nazione (2000-2018)')
+plt.xticks(rotation=90)  # Ruota i nomi delle nazioni per evitare sovrapposizioni
+plt.tight_layout()  # Adatta automaticamente la disposizione per evitare sovrapposizioni
+
+# Mostra il grafico
+plt.show()
+
+
+columns_to_consider = ['Country name', 'Substance'] + [str(year) for year in range(2000, 2019)]
+substance = join2[columns_to_consider]
+el = substance.sort_values(by=['Country name']+ [str(year) for year in range(2000, 2019)])
+
+max_pollution_by_country = el[columns_to_consider[2:]].mean(axis=1)
+
+el['Mean Pollution'] = max_pollution_by_country
+
+plt.figure(figsize=(10, 6))
+plt.bar(el['Country name'], el['Mean Pollution'], color='skyblue')
+
+# Aggiungi etichette e titolo al grafico
+plt.xlabel('Nazione')
+plt.ylabel('Valore medio')
+plt.title('Media inquinamento PM2.5 per Nazione (2000-2018)')
+plt.xticks(rotation=90)  # Ruota i nomi delle nazioni per evitare sovrapposizioni
+plt.tight_layout()  # Adatta automaticamente la disposizione per evitare sovrapposizioni
+
+# Mostra il grafico
+plt.show()
+
+
+columns_to_consider = ['Country name', 'Substance'] + [str(year) for year in range(2000, 2019)]
+substance2 = join3[columns_to_consider]
+el = substance2.sort_values(by=['Country name']+ [str(year) for year in range(2000, 2019)])
+
+max_pollution_by_country = el[columns_to_consider[2:]].mean(axis=1)
+
+el['Mean Pollution'] = max_pollution_by_country
+
+plt.figure(figsize=(10, 6))
+plt.bar(el['Country name'], el['Mean Pollution'], color='red')
+
+plt.xlabel('Nazione')
+plt.ylabel('Valore medio')
+plt.title('Media inquinamento PM10 per Nazione (2000-2018)')
+plt.xticks(rotation=90)  # Ruota i nomi delle nazioni per evitare sovrapposizioni
+plt.tight_layout()  # Adatta automaticamente la disposizione per evitare sovrapposizioni
+
+# Mostra il grafico
+plt.show()
+
+
