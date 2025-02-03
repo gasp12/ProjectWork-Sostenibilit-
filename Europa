@@ -1,0 +1,228 @@
+import sqlite3
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+
+tab1 = pd.read_csv("tab1.csv")
+tab2 = pd.read_csv("tab2.csv")
+tab3 = pd.read_csv("tab3.csv")
+tab4 = pd.read_csv("tab4.csv")
+tab5 = pd.read_csv("tab5.csv")
+
+'''conn = sqlite3.connect('proget.db')
+
+tab1.to_sql("tab1", conn)
+tab2.to_sql("tab2", conn)
+tab3.to_sql("tab3", conn)
+tab4.to_sql("tab4", conn)
+tab5.to_sql("tab5", conn)'''
+
+#TAB2
+tab2 = pd.read_csv("tab2.csv")
+
+tab2.columns = tab2.iloc[1]
+tab2= tab2.iloc[2:].reset_index(drop=True)
+tab2.head()
+
+#TAB1
+tab1 = pd.read_csv("tab1.csv")
+
+tab1.columns = tab1.iloc[1]
+tab1= tab1.iloc[2:].reset_index(drop=True)
+tab1.head()
+
+
+#TAB3
+tab3 = pd.read_csv("tab3.csv")
+
+tab3.columns = tab3.iloc[0]
+tab3= tab3.iloc[2:].reset_index(drop=True)
+tab3.head(4)
+
+
+#TAB4
+tab4 = pd.read_csv("tab4.csv")
+
+tab4.columns = tab4.iloc[2]
+tab4= tab4.iloc[3:].reset_index(drop=True)
+tab4.head()
+
+
+#TAB5
+tab5.head()
+tab5_clean = tab5.drop(tab5.columns[3:33], axis =1 )
+tab5_clean.head()
+
+
+
+
+region = ['OECD_Europe','Central Europe','Turkey','Ukraine +']
+tab2['Regional grouping']=tab2['Regional grouping'].replace(region,'Europe')
+Europe = tab2.groupby('Regional grouping').get_group('Europe')
+Europe.head()
+
+
+
+
+prod=Europe.join(tab5_clean.set_index('Country_code_A3'), on='Country ISO code')
+prod.head()
+
+
+
+
+pm10=prod[prod["Substance"]=="PM10"]
+pm10.head()
+
+
+
+pm25=prod[prod["Substance"]=="PM2.5"]
+pm25.head()
+
+
+t1 = tab2[tab2["Regional grouping"] == 'Europe']
+countries_eu = set(t1["Country name"])
+
+print(t1)
+
+
+
+
+tab4_eu = tab4[tab4["Name"].isin(countries_eu)]
+tab4_eu.head(6)
+
+
+
+
+media2 = pm10.describe().loc['mean']
+
+plt.figure(figsize=(10, 6))
+plt.plot(media2.index, media2.values, label="mediaPM10", marker='o', color='black')
+
+
+
+plt.title('Concentrazione media del PM10 in Europa negli anni (2000-2018)', fontsize=14)
+plt.xlabel('Anno', fontsize=12)
+plt.ylabel('Concentrazione media', fontsize=12)
+
+
+plt.legend()
+
+plt.xticks(rotation=45) 
+plt.grid(True)
+plt.tight_layout() 
+plt.show()                      #Concentrazione media del PM10 in Europa negli anni (2000-2018)
+
+
+
+
+
+media = pm25.describe().loc['mean']
+
+plt.figure(figsize=(10, 6))
+plt.plot(media.index, media.values, label="media", marker='o', color='b')
+plt.title('Concentrazione media del PM2.5 in Europa negli anni (2000-2018)', fontsize=14)
+plt.xlabel('Anno', fontsize=12)
+plt.ylabel('Concentrazione media', fontsize=12)
+plt.legend()
+plt.xticks(rotation=45) 
+plt.grid(True)
+plt.tight_layout() 
+plt.show()                  #Concentrazione media del PM2.5 in Europa negli anni (2000-2018)
+
+
+
+
+columns_to_consider = ['Country name', 'Substance'] + [str(year) for year in range(2000, 2019)]
+pm25 = pm25[columns_to_consider]
+el = pm25.sort_values(by=['Country name']+ [str(year) for year in range(2000, 2019)])
+
+max_pollution_by_country = el[columns_to_consider[2:]].max(axis=1)
+
+el['Max Pollution'] = max_pollution_by_country
+
+plt.figure(figsize=(10, 6))
+plt.bar(el['Country name'], el['Max Pollution'], color='skyblue')
+
+
+plt.xlabel('Nazione')
+plt.ylabel('Media inquinamento')
+plt.title('Media inquinamento PM2.5 per Nazione (2000-2018)')
+plt.xticks(rotation=90)  
+plt.tight_layout()  # Adatta automaticamente la disposizione per evitare sovrapposizioni
+plt.show()
+
+
+columns_to_consider = ['Country name', 'Substance'] + [str(year) for year in range(2000, 2019)]
+pm10 = pm10[columns_to_consider]
+el = pm10.sort_values(by=['Country name']+ [str(year) for year in range(2000, 2019)])
+
+max_pollution_by_country = el[columns_to_consider[2:]].max(axis=1)
+
+el['Max Pollution'] = max_pollution_by_country
+
+plt.figure(figsize=(10, 6))
+plt.bar(el['Country name'], el['Max Pollution'], color='skyblue')
+
+
+plt.xlabel('Nazione')
+plt.ylabel('Media inquinamento')
+plt.title('Media inquinamento PM10 per Nazione (2000-2018)')
+plt.xticks(rotation=90)  
+plt.tight_layout()  # Adatta automaticamente la disposizione per evitare sovrapposizioni
+plt.show()
+
+
+
+colonne_anni = [str(year) for year in range(2000, 2019)]
+pm10["Mean Pollution"] = pm10[colonne_anni].mean(axis=1)     
+
+paese_inquinante = "Moldova, Republic of"
+
+dati_paese = pm10[pm10["Country name"] == paese_inquinante][colonne_anni].T
+dati_paese.columns = ["Pollution"]
+
+plt.figure(figsize=(10, 5))
+plt.plot(dati_paese.index, dati_paese["Pollution"], marker="o", linestyle="-", color="b", label=paese_inquinante)
+
+plt.xlabel("Anno")
+plt.ylabel("Inquinamento")
+plt.title(f"Inquinamento PM10 di {paese_inquinante} (2000-2018)")
+plt.xticks(rotation=45)
+plt.legend()
+plt.grid()
+
+plt.show()          #Inquinamente paese Moldova pm10
+
+
+
+
+
+
+colonne_anni = [str(year) for year in range(2000, 2019)]
+pm25["Mean Pollution"] = pm10[colonne_anni].mean(axis=1)     
+
+paese_inquinante = "Moldova, Republic of"
+
+dati_paese = pm25[pm25["Country name"] == paese_inquinante][colonne_anni].T
+dati_paese.columns = ["Pollution"]
+
+plt.figure(figsize=(10, 5))
+plt.plot(dati_paese.index, dati_paese["Pollution"], marker="o", linestyle="-", color="b", label=paese_inquinante)
+
+plt.xlabel("Anno")
+plt.ylabel("Inquinamento")
+plt.title(f"Inquinamento PM2.5 di {paese_inquinante} (2000-2018)")
+plt.xticks(rotation=45)
+plt.legend()
+plt.grid()
+
+plt.show()              #Inquinamente paese Moldova pm25
+
+
+
+
+
+
+
