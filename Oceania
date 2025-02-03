@@ -1,0 +1,274 @@
+# %%
+import pandas as pd
+import sqlite3 as sq
+import matplotlib.pyplot as plt
+
+# %%
+tab1 =pd.read_csv("tab1.csv")
+tab2 =pd.read_csv("tab2.csv")
+tab3=pd.read_csv("tab3.csv")
+tab4=pd.read_csv("tab4.csv")
+tab5=pd.read_csv("tab5.csv")
+
+'''conn = sq.connect("DBGruppo.db")
+
+tab1.to_sql("tab1", conn)
+tab2.to_sql("tab2", conn)
+tab3.to_sql("tab3", conn)
+tab4.to_sql("tab4", conn)
+tab5.to_sql("tab5", conn)'''
+
+# %% [markdown]
+# Sistemo le tabelle
+
+# %%
+tab2.columns=tab2.iloc[1]
+tab2=tab2.iloc[2:].reset_index(drop=True)
+tab2.head()
+
+# %%
+tab3.columns=tab3.iloc[2]
+tab3=tab3.iloc[3:].reset_index(drop=True)
+tab3.head()
+
+# %%
+tab4.columns=tab4.iloc[2]
+tab4=tab4.iloc[3:].reset_index(drop=True)
+tab4.head()
+
+# %% [markdown]
+# Raggruppo i paesi per continente (oceania)
+
+# %%
+oceania =tab2.groupby('Regional grouping').get_group('Oceania')
+oceania
+
+# %% [markdown]
+# faccio una join tra oceania (tab2 filtrata per continente) e la tabella 5 tramite il nome del paese
+
+# %%
+o=oceania.join(tab5.set_index('Name'), on='Country name')
+#o['Country name'].unique()
+o.head()
+
+# %% [markdown]
+# elimino le colonne dal 1970 al 1999
+
+# %%
+colonne_da_eliminare = [col for col in o.columns if '19' in col]
+o = o.drop(columns=colonne_da_eliminare)
+o.head()
+
+# %% [markdown]
+# rinomino la micronesia
+
+# %%
+o["Country name"]=o["Country name"].replace("Micronesia, Federated States of", "Micronesia")
+
+# %% [markdown]
+# ## PM10
+
+# %% [markdown]
+# Filtro nella varibile "o" la sostanza di PM10
+
+# %%
+filtro_PM10=o[o["Substance"]=="PM10"]
+filtro_PM10
+
+# %% [markdown]
+# faccio la media per ogni anno della sostanza PM10
+
+# %%
+media_pm10=filtro_PM10.describe().loc['mean']
+
+
+# %% [markdown]
+# faccio il grafico della concentrazione media di PM10 per anno in oceania
+
+# %%
+plt.figure(figsize=(10, 6))
+plt.plot(media_pm10.index, media_pm10.values, label="media", marker='o', color='b')
+plt.title('Concentrazione media del PM10 in Oceania(2000-2018)', fontsize=14)
+plt.xlabel('Anno', fontsize=12)
+plt.ylabel('Concentrazione media', fontsize=12)
+
+plt.legend()
+
+plt.xticks(rotation=45) 
+plt.grid(True)
+plt.tight_layout() 
+plt.show()
+
+# %% [markdown]
+# grafico sull'inquinamento medio di tutte le nazioni tra il 2000 e il 2018
+
+# %%
+
+columns_to_consider = ['Country name', 'Substance'] + [str(year) for year in range(2000, 2019)]
+filtro_PM10 = filtro_PM10[columns_to_consider]
+
+inquinamento_medio_PM10 = filtro_PM10.sort_values(by=['Country name'] + [str(year) for year in range(2000, 2019)])
+
+max_pollution_by_country = inquinamento_medio_PM10[columns_to_consider[2:]].mean(axis=1)
+
+inquinamento_medio_PM10['Mean Pollution'] = max_pollution_by_country
+
+
+inquinamento_medio_PM10 = inquinamento_medio_PM10[inquinamento_medio_PM10['Mean Pollution'] < 1]
+
+
+if not inquinamento_medio_PM10.empty:
+   
+    plt.figure(figsize=(10, 6))
+    plt.bar(inquinamento_medio_PM10['Country name'], inquinamento_medio_PM10['Mean Pollution'], color='b')
+
+    
+    plt.xlabel('Nazione')
+    plt.ylabel('Valore medio')
+    plt.title('Media inquinamento PM 10 per Nazione in Oceania (2000-2018)')
+    plt.xticks(rotation=90)  
+    plt.tight_layout()  
+
+   
+    plt.show()
+
+# %%
+'''columns_to_consider = ['Country name', 'Substance'] + [str(year) for year in range(2000, 2019)]
+filtro_PM10 = filtro_PM10[columns_to_consider]
+inquinamento_medio_PM10 = filtro_PM10.sort_values(by=['Country name']+ [str(year) for year in range(2000, 2019)])
+
+max_pollution_by_country = inquinamento_medio_PM10[columns_to_consider[2:]].mean(axis=1)
+
+inquinamento_medio_PM10['Mean Pollution'] = max_pollution_by_country
+
+plt.figure(figsize=(10, 6))
+plt.bar(inquinamento_medio_PM10['Country name'], inquinamento_medio_PM10['Mean Pollution'], color='b')
+
+plt.xlabel('Nazione')
+plt.ylabel('Valore medio')
+plt.title('Media inquinamento PM 10 per Nazione in Oceania (2000-2018)')
+plt.xticks(rotation=90)  
+plt.tight_layout()  
+
+
+plt.show()'''
+
+# %%
+inquinamento_medio_PM10.head()
+
+# %% [markdown]
+# grafico sul paese più inquinante i valori del suo inquinamento anno per anno da 2000 a 2018
+
+# %%
+colonne_anni = [str(year) for year in range(2000, 2019)]
+filtro_PM10["Mean Pollution"] = filtro_PM10[colonne_anni].mean(axis=1)     #MEAN POLUUTION è L'INQUINAMENTO MEDIO
+
+paese_inquinante = "Niue"
+
+dati_paese = filtro_PM10[filtro_PM10["Country name"] == paese_inquinante][colonne_anni].T
+dati_paese.columns = ["Pollution"]
+
+plt.figure(figsize=(10, 5))
+plt.plot(dati_paese.index, dati_paese["Pollution"], marker="o", linestyle="-", color="b", label=paese_inquinante)
+
+plt.xlabel("Anno")
+plt.ylabel("Inquinamento")
+plt.title(f"Inquinamento di {paese_inquinante} (2000-2018)")
+plt.xticks(rotation=45)
+plt.legend()
+plt.grid()
+
+plt.show()
+
+# %% [markdown]
+# ## PM2.5
+
+# %% [markdown]
+# filtro nella variabile o la sostanza PM 2.5
+
+# %%
+filtro_PM25=o[o["Substance"]=="PM2.5"]
+filtro_PM25.head()
+
+# %%
+media_pm25 = filtro_PM25.describe().loc['mean']
+
+# %%
+
+plt.figure(figsize=(10, 6))
+plt.plot(media_pm25.index, media_pm25.values, label="mediaPM10", marker='o', color='purple')
+
+
+
+plt.title('Concentrazione media del PM2.5 in Oceania (2000-2018)', fontsize=14)
+plt.xlabel('Anno', fontsize=12)
+plt.ylabel('Concentrazione media', fontsize=12)
+
+
+plt.legend()
+
+plt.xticks(rotation=45) 
+plt.grid(True)
+plt.tight_layout() 
+plt.show()
+
+# %% [markdown]
+# grafico sull'inquinamento medio di tutte le nazioni tra il 2000 e il 2018
+
+# %%
+columns_to_consider = ['Country name', 'Substance'] + [str(year) for year in range(2000, 2019)]
+filtro_PM25 = filtro_PM25[columns_to_consider]
+
+inquinamento_medio_PM25 = filtro_PM25.sort_values(by=['Country name'] + [str(year) for year in range(2000, 2019)])
+
+max_pollution_by_country = inquinamento_medio_PM25[columns_to_consider[2:]].mean(axis=1)
+
+inquinamento_medio_PM25['Mean Pollution'] = max_pollution_by_country
+
+
+inquinamento_medio_PM25 = inquinamento_medio_PM25[inquinamento_medio_PM25['Mean Pollution'] < 1]
+
+
+if not inquinamento_medio_PM25.empty:
+   
+    plt.figure(figsize=(10, 6))
+    plt.bar(inquinamento_medio_PM25['Country name'], inquinamento_medio_PM25['Mean Pollution'], color='purple')
+
+    
+    plt.xlabel('Nazione')
+    plt.ylabel('Valore medio')
+    plt.title('Media inquinamento PM 2.5 per Nazione in Oceania (2000-2018)')
+    plt.xticks(rotation=90)  
+    plt.tight_layout()  
+
+   
+    plt.show()
+
+# %% [markdown]
+# grafico sul paese più inquinante i valori del suo inquinamento anno per anno da 2000 a 2018
+
+# %%
+colonne_anni = [str(year) for year in range(2000, 2019)]
+filtro_PM25["Mean Pollution"] = filtro_PM25[colonne_anni].mean(axis=1)     #MEAN POLUUTION è L'INQUINAMENTO MEDIO
+
+paese_inquinante = "Niue"
+
+dati_paese = filtro_PM25[filtro_PM25["Country name"] == paese_inquinante][colonne_anni].T
+dati_paese.columns = ["Pollution"]
+
+plt.figure(figsize=(10, 5))
+plt.plot(dati_paese.index, dati_paese["Pollution"], marker="o", linestyle="-", color="purple", label=paese_inquinante)
+
+plt.xlabel("Anno")
+plt.ylabel("Inquinamento")
+plt.title(f"Inquinamento di {paese_inquinante} (2000-2018)")
+plt.xticks(rotation=45)
+plt.legend()
+plt.grid()
+
+plt.show()
+
+# %%
+
+
+
