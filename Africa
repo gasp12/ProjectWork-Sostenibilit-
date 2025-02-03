@@ -1,0 +1,221 @@
+# %%
+import sqlite3
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+
+# %%
+tab1 = pd.read_csv("Tab1.csv")
+tab2 = pd.read_csv("Tab2.csv")
+tab3 = pd.read_csv("Tab3.csv")
+tab4 = pd.read_csv("Tab4.csv")
+tab5 = pd.read_csv("Tab5.csv")
+
+'''conn = sqlite3.connect('DBGruppo2.db')
+
+tab1.to_sql("Tab1", conn)
+tab2.to_sql("Tab2", conn)
+tab3.to_sql("Tab3", conn)
+tab4.to_sql("Tab4", conn)
+tab5.to_sql("Tab5", conn)'''
+
+# %%
+'''tab2.rename(columns={'Unnamed: 1': 'Country name'}, inplace=True),
+tab2.rename(columns={'Unnamed: 2': 'Continent'}, inplace=True),
+tab2.rename(columns={'Unnamed: 3': 'Country class'}, inplace=True),
+tab2.rename(columns={'Unnamed: 4': 'SDI group'}, inplace=True)
+tab2.rename(columns={'Suppl. Table 2 - Country classifications': 'Country ISO code'}, inplace=True)
+tab2.head()'''
+
+# %%
+tab2.columns = tab2.iloc[1]
+tab2 = tab2.iloc[2:].reset_index(drop=True)
+tab2
+
+# %%
+#tab3
+
+# %%
+tab3.columns = tab3.iloc[2]
+tab3 = tab3.iloc[3:].reset_index(drop=True)
+tab3
+
+# %%
+tab5
+
+# %%
+tab4.columns = tab4.iloc[2]
+tab4 = tab4.iloc[3:].reset_index(drop=True)
+tab4
+
+# %%
+region = ['Northern_Africa','Eastern_Africa','Western_Africa','Southern_Africa']
+tab2['Regional grouping'] = tab2['Regional grouping'].replace(region, 'Africa')
+
+
+# %%
+Africa = tab2.groupby('Regional grouping').get_group('Africa')
+#Africa
+
+# %%
+prod = Africa.join(tab5.set_index('Name'), on='Country name')
+#prod ['Country name'].unique()
+prod.head()
+
+# %%
+colonne_da_eliminare = [col for col in prod.columns if '19' in col]  # esempio di pattern
+prod = prod.drop(columns=colonne_da_eliminare)
+prod.head()
+
+# %%
+PM10_filtered = prod[prod["Substance"] == "PM10"]
+PM10_filtered.head()
+
+# %%
+media_PM10 = PM10_filtered.describe().loc['mean']
+#media_PM10
+
+# %%
+
+media = PM10_filtered.describe().loc['mean']
+plt.figure(figsize=(10, 6))
+plt.plot(media.index, media.values, label="media", marker='o', color='pink')
+
+
+
+plt.title('Concentrazione media del PM10 in Africa negli anni (2000-2018)', fontsize=14)
+plt.xlabel('Anno', fontsize=12)
+plt.ylabel('Concentrazione media', fontsize=12)
+
+
+plt.legend()
+
+plt.xticks(rotation=45) 
+plt.grid(True)
+plt.tight_layout() 
+plt.show()
+
+# %%
+PM25_filtered = prod[prod["Substance"] == "PM2.5"]
+PM25_filtered.head()
+
+# %%
+media_PM25 = PM25_filtered.describe().loc['mean']
+#media_PM25
+
+# %%
+plt.figure(figsize=(10, 6))
+plt.plot(media_PM25.index, media_PM25.values, label="mediaPM10", marker='o', color='purple')
+
+
+
+plt.title('Concentrazione media del PM10 in Africa negli anni (2000-2018)', fontsize=14)
+plt.xlabel('Anno', fontsize=12)
+plt.ylabel('Concentrazione media', fontsize=12)
+
+
+plt.legend()
+
+plt.xticks(rotation=45) 
+plt.grid(True)
+plt.tight_layout() 
+plt.show()
+
+# %%
+columns = ['Substance'] + ['Country name'] + [str(anno) for anno in range(2000, 2019)] #seleziono solo le colonne che m'interessano 
+substance_filtered = PM10_filtered[columns]
+substance_filtered.sort_values(by='2000', ascending=False).head()
+#s2 = substance_filtered.sort_values(by='Country name')
+#s3 = pd.concat([s2, PM10_filtered ])
+
+# %%
+columns_to_consider = ['Country name', 'Substance'] + [str(year) for year in range(2000, 2019)]
+PM10_filtered = PM10_filtered[columns_to_consider]
+inquinamento_medio = PM10_filtered.sort_values(by=['Country name']+ [str(year) for year in range(2000, 2019)])
+
+max_pollution_by_country = inquinamento_medio[columns_to_consider[2:]].mean(axis=1)
+
+inquinamento_medio['Mean Pollution'] = max_pollution_by_country
+
+plt.figure(figsize=(10, 6))
+plt.bar(inquinamento_medio['Country name'], inquinamento_medio['Mean Pollution'], color='pink')
+
+
+plt.xlabel('Nazione')
+plt.ylabel('Valore medio')
+plt.title('Media inquinamento PM10 per Nazione (2000-2018)')
+plt.xticks(rotation=90)  # Ruota i nomi delle nazioni per evitare sovrapposizioni
+plt.tight_layout()  # Adatta automaticamente la disposizione per evitare sovrapposizioni
+
+
+plt.show()
+
+# %%
+columns_to_consider = ['Country name', 'Substance'] + [str(year) for year in range(2000, 2019)]
+PM25_filtered = PM25_filtered[columns_to_consider]
+inquinamento_medio = PM25_filtered.sort_values(by=['Country name']+ [str(year) for year in range(2000, 2019)])
+
+max_pollution_by_country = inquinamento_medio[columns_to_consider[2:]].mean(axis=1)
+
+inquinamento_medio['Mean Pollution'] = max_pollution_by_country
+
+plt.figure(figsize=(10, 6))
+plt.bar(inquinamento_medio['Country name'], inquinamento_medio['Mean Pollution'], color='pink')
+
+
+plt.xlabel('Nazione')
+plt.ylabel('Valore medio')
+plt.title('Media inquinamento PM2.5 per Nazione (2000-2018)')
+plt.xticks(rotation=90)  # Ruota i nomi delle nazioni per evitare sovrapposizioni
+plt.tight_layout()  # Adatta automaticamente la disposizione per evitare sovrapposizioni
+
+
+plt.show()
+
+# %%
+inquinamento_medio.head()
+
+# %%
+colonne_anni = [str(year) for year in range(2000, 2019)]
+PM10_filtered["Mean Pollution"] = PM10_filtered[colonne_anni].mean(axis=1)     #MEAN POLUUTION è L'INQUINAMENTO MEDIO
+
+paese_inquinante = "Central African Republic"
+
+dati_paese = PM10_filtered[PM10_filtered["Country name"] == paese_inquinante][colonne_anni].T
+dati_paese.columns = ["Pollution"]
+
+plt.figure(figsize=(10, 5))
+plt.plot(dati_paese.index, dati_paese["Pollution"], marker="o", linestyle="-", color="orange", label=paese_inquinante)
+
+plt.xlabel("Anno")
+plt.ylabel("Inquinamento")
+plt.title(f"Inquinamento PM10 di {paese_inquinante} (2000-2018)")
+plt.xticks(rotation=45)
+plt.legend()
+plt.grid()
+
+plt.show()
+
+
+# %%
+colonne_anni = [str(year) for year in range(2000, 2019)]
+PM25_filtered["Mean Pollution"] = PM25_filtered[colonne_anni].mean(axis=1)     #MEAN POLUUTION è L'INQUINAMENTO MEDIO
+
+paese_inquinante = "Central African Republic"
+
+dati_paese = PM25_filtered[PM25_filtered["Country name"] == paese_inquinante][colonne_anni].T
+dati_paese.columns = ["Pollution"]
+
+plt.figure(figsize=(10, 5))
+plt.plot(dati_paese.index, dati_paese["Pollution"], marker="o", linestyle="-", color="orange", label=paese_inquinante)
+
+plt.xlabel("Anno")
+plt.ylabel("Inquinamento")
+plt.title(f"Inquinamento PM2.5 di {paese_inquinante} (2000-2018)")
+plt.xticks(rotation=45)
+plt.legend()
+plt.grid()
+
+plt.show()
+
+
