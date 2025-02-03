@@ -1,0 +1,199 @@
+import pandas as pd
+import sqlite3 as sq
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+'''
+tab1 = pd.read_csv("tab1.csv")
+conn = sq.connect("EDGAR.FOOD.db")
+
+tab1.to_sql('Tab1', conn, if_exists='append', index=False)
+conn.close()
+'''
+tab2 = pd.read_csv("Database/tab2.csv")
+tab5 = pd.read_csv("Database/tab5.csv")
+
+
+tab2.head()
+tab2['Regional grouping'].unique()
+
+region = ['Southeastern Asia','Japan','Korea', 'China +','Korea', 'China +','Asia-Stan','Russia +','Turkey', 'India +','Indonesia +']
+
+tab2['Regional grouping']= tab2['Regional grouping'].replace(region, 'Asia')
+
+asia= tab2.groupby('Regional grouping').get_group('Asia')  
+
+asia
+
+
+prod = asia.join(tab5.set_index('Name'), on='Country name')
+
+prod.head()
+
+
+pm10 = prod[(prod.Substance == 'PM10')]
+
+pm10.head()
+
+colonne_da_tenere = []
+
+for i in prod:
+    if not i.isdigit() or (2000 <= int(i) <= 2018):
+        colonne_da_tenere.append(i)
+
+pm10_filtered = pm10[colonne_da_tenere]
+         
+pm10_filtered = pm10_filtered.drop(['Substance','Regional grouping','SDI group','Country_code_A3'], axis = 1)
+
+pm10_filtered['2016'] = pd.to_numeric(pm10_filtered['2016'])
+pm10_filtered['2008'] = pd.to_numeric(pm10_filtered['2008'])
+
+pm10_filtered.head()
+
+mean = pm10_filtered.describe()
+
+y = mean.loc['mean']
+
+
+plt.figure(figsize=(10, 6))
+plt.plot(y.index, y.values, label="mediaPM10", marker='o', color='black')
+
+
+plt.title('Concentrazione media del PM10 in Asia negli anni (2000-2018)', fontsize=14)
+plt.xlabel('Anno', fontsize=12)
+plt.ylabel('Concentrazione media', fontsize=12)
+
+
+plt.legend()
+plt.xticks(rotation=45) 
+plt.grid(True)
+plt.tight_layout() 
+plt.show()
+
+
+
+media_anni = pm10_filtered.drop(['Country ISO code','Country name','Country class'], axis = 1)
+
+media_anni =media_anni.mean(axis=1)
+
+
+
+
+plt.figure(figsize=(10, 6))
+plt.bar(pm10_filtered['Country name'], media_anni, color='red')
+
+plt.xlabel('Nazione')
+plt.ylabel('Valore medio')
+plt.title('Media inquinamento PM10 per Nazione (2000-2018)')
+plt.xticks(rotation=90)  # Ruota i nomi delle nazioni per evitare sovrapposizioni
+plt.tight_layout()  # Adatta automaticamente la disposizione per evitare sovrapposizioni
+
+plt.show()
+
+
+media_anni.sort_values(ascending=False)
+
+brunei_row = pm10_filtered.loc[pm10_filtered['Country name'] == 'Brunei Darussalam']
+brunei_mean = brunei_row.describe()
+
+bm = brunei_mean.loc['mean']
+
+plt.figure(figsize=(10, 6))
+plt.plot(bm.index, bm.values, label="mediaPM10", marker='o', color='black')
+
+
+plt.title('Concentrazione media del PM10 nel Brunei negli anni (2000-2018)', fontsize=14)
+plt.xlabel('Anno', fontsize=12)
+plt.ylabel('Concentrazione media', fontsize=12)
+
+
+plt.legend()
+plt.xticks(rotation=45) 
+plt.grid(True)
+plt.tight_layout() 
+plt.show()
+
+PM2,5
+
+pm25 = prod[(prod.Substance == 'PM2.5')]
+pm25.head()
+
+colonne_da_tenere = []
+
+for i in prod:
+    if not i.isdigit() or (2000 <= int(i) <= 2018):
+        colonne_da_tenere.append(i)
+
+pm25_filtered = pm25[colonne_da_tenere]
+         
+pm25_filtered = pm25_filtered.drop(['Substance','Regional grouping','SDI group','Country_code_A3'], axis = 1)
+
+pm25_filtered['2016'] = pd.to_numeric(pm25_filtered['2016'])
+pm25_filtered['2008'] = pd.to_numeric(pm25_filtered['2008'])
+
+pm25_filtered.head()
+
+mean = pm25_filtered.describe()
+
+y = mean.loc['mean']
+
+plt.figure(figsize=(10, 6))
+plt.plot(y.index, y.values, label="media", marker='o', color='b')
+
+
+
+plt.title('Concentrazione media del PM2.5 in Asia negli anni (2000-2018)', fontsize=14)
+plt.xlabel('Anno', fontsize=12)
+plt.ylabel('Concentrazione media', fontsize=12)
+
+
+plt.legend()
+
+plt.xticks(rotation=45) 
+plt.grid(True)
+plt.tight_layout() 
+plt.show()
+
+
+
+media_anni = pm25_filtered.drop(['Country ISO code','Country name','Country class'], axis = 1)
+
+media_anni =media_anni.mean(axis=1)
+
+print(len(media_anni))
+
+
+plt.figure(figsize=(10, 6))
+plt.bar(pm25_filtered['Country name'], media_anni, color='red')
+
+plt.xlabel('Nazione')
+plt.ylabel('Valore medio')
+plt.title('Media inquinamento PM2,5 per Nazione (2000-2018)')
+plt.xticks(rotation=90)  # Ruota i nomi delle nazioni per evitare sovrapposizioni
+plt.tight_layout()  # Adatta automaticamente la disposizione per evitare sovrapposizioni
+
+plt.show()
+
+
+media_anni.sort_values(ascending=False)
+
+phl_row = pm25_filtered.loc[media_anni.index == 172]
+phl_mean = phl_row.describe()
+
+phl = phl_mean.loc['mean'] 
+
+plt.figure(figsize=(10, 6))
+plt.plot(phl.index, phl.values, label="mediaPM10", marker='o', color='black')
+
+
+plt.title('Concentrazione media del PM2,5 nelle Filippine negli anni (2000-2018)', fontsize=14)
+plt.xlabel('Anno', fontsize=12)
+plt.ylabel('Concentrazione media', fontsize=12)
+
+
+plt.legend()
+plt.xticks(rotation=45) 
+plt.grid(True)
+plt.tight_layout() 
+plt.show()
